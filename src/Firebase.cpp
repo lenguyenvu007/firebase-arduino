@@ -18,7 +18,7 @@
 using std::unique_ptr;
 
 namespace {
-std::string makeFirebaseURL(const std::string& path, const std::string& auth) {
+std::string makeFirebaseURL(const std::string& path, const std::string& auth, const std::string& method) {
   std::string url;
   if (path[0] != '/') {
     url = "/";
@@ -59,6 +59,16 @@ unique_ptr<FirebaseSet> Firebase::setPtr(const std::string& path,
       new FirebaseSet(host_, auth_, path, value, http_.get()));
 }
 
+FirebaseUpdate Firebase::update(const std::string& path, const std::string& value) {
+    return FirebaseUpdate(host_, auth_, path, value, http_.get());
+}
+
+unique_ptr<FirebaseUpdate> Firebase::updatePtr(const std::string& path,
+                                               const std::string& value) {
+    return unique_ptr<FirebaseUpdate>(
+                                      new FirebaseUpdate(host_, auth_, path, value, http_.get()));
+}
+
 FirebasePush Firebase::push(const std::string& path, const std::string& value) {
   return FirebasePush(host_, auth_, path, value, http_.get());
 }
@@ -91,7 +101,7 @@ unique_ptr<FirebaseStream> Firebase::streamPtr(const std::string& path) {
 FirebaseCall::FirebaseCall(const std::string& host, const std::string& auth,
                            const char* method, const std::string& path,
                            const std::string& data, FirebaseHttpClient* http) : http_(http) {
-  std::string path_with_auth = makeFirebaseURL(path, auth);
+  std::string path_with_auth = makeFirebaseURL(path, auth, method);
   http_->setReuseConnection(true);
   http_->begin(host, path_with_auth);
 
@@ -162,6 +172,17 @@ FirebaseSet::FirebaseSet(const std::string& host, const std::string& auth,
     // TODO: parse json
     json_ = response();
   }
+}
+
+// FirebaseUpdate (Vu added)
+FirebaseUpdate::FirebaseUpdate(const std::string& host, const std::string& auth,
+                               const std::string& path, const std::string& value,
+                               FirebaseHttpClient* http)
+: FirebaseCall(host, auth, "PATCH", path, value, http) {
+    if (!error()) {
+        // TODO: parse json
+        json_ = response();
+    }
 }
 
 // FirebasePush
